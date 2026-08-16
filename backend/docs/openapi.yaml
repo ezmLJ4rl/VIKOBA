@@ -1,0 +1,354 @@
+openapi: 3.0.3
+info:
+  title: Vikoba API
+  version: 1.0.0
+  description: >-
+    Backend for the Vikoba group-savings app. Token auth via Laravel Sanctum
+    (Bearer token from POST /api/v1/auth/login). Money amounts are whole TZS.
+    Loans are governed by group rules: eligibility is computed server-side and
+    the client's preview numbers are ignored.
+servers:
+  - url: http://127.0.0.1:8123/api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string, nullable: true }
+        role:
+          type: string
+          enum: [admin, chairperson, treasurer, secretary, member]
+        group_id: { type: integer, nullable: true }
+    Member:
+      type: object
+      properties:
+        id: { type: integer }
+        full_name: { type: string }
+        phone: { type: string }
+        role: { type: string, enum: [admin, chairperson, treasurer, secretary, member] }
+        joined_date: { type: string, format: date }
+        total_shares: { type: integer }
+        share_value: { type: integer }
+        is_active: { type: boolean }
+    Loan:
+      type: object
+      properties:
+        id: { type: integer }
+        member_id: { type: integer }
+        principal: { type: integer }
+        interest_rate: { type: number }
+        interest_amount: { type: integer }
+        total_payable: { type: integer }
+        amount_repaid: { type: integer }
+        status:
+          type: string
+          enum: [pending, approved, active, repaid, rejected]
+        issued_at: { type: string, format: date-time, nullable: true }
+        due_date: { type: string, format: date, nullable: true }
+    Contribution:
+      type: object
+      properties:
+        id: { type: integer }
+        member_id: { type: integer }
+        shares: { type: integer }
+        share_value: { type: integer }
+        amount_total: { type: integer }
+        recorded_at: { type: string, format: date-time }
+    Group:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        share_value: { type: integer }
+        default_interest_rate: { type: number }
+        max_loan_multiple: { type: number }
+    Repayment:
+      type: object
+      properties:
+        id: { type: integer }
+        loan_id: { type: integer }
+        amount: { type: integer }
+        recorded_at: { type: string, format: date-time }
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+        reason: { type: string, nullable: true }
+        max_allowed: { type: integer, nullable: true }
+security:
+  - bearerAuth: []
+paths:
+  /auth/register:
+    post:
+      summary: Register a new treasurer + new group (single-group MVP)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, phone, password, group_name]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                password: { type: string, minLength: 8 }
+                group_name: { type: string }
+      responses:
+        '201':
+          description: Registered; returns token + user + group
+  /auth/login:
+    post:
+      summary: Exchange credentials for a Bearer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '201': { description: Token issued }
+        '422': { description: Invalid credentials, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /auth/logout:
+    post:
+      summary: Revoke the current token
+      responses:
+        '200': { description: Logged out }
+  /auth/me:
+    get:
+      summary: Current user with group + linked member
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+  /members:
+    get:
+      summary: List group members (search + active_only filters)
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+        - { name: active_only, in: query, schema: { type: boolean } }
+        - { name: per_page, in: query, schema: { type: integer, default: 25 } }
+      responses:
+        '200':
+          description: Paginated members
+    post:
+      summary: Add a member (committee roles only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name, phone, role]
+              properties:
+                full_name: { type: string, maxLength: 120 }
+                phone:
+                  type: string
+                  description: Tanzanian number, e.g. 0712345678 or +255712345678
+                role: { type: string, enum: [chairperson, treasurer, secretary, member] }
+                joined_date: { type: string, format: date }
+                initial_shares: { type: integer, minimum: 0 }
+      responses:
+        '201': { description: Member created }
+        '403': { description: Not a committee role }
+        '422': { description: Validation failed / duplicate phone }
+  /members/{member}/deactivate:
+    post:
+      summary: Archive a member (is_active=false, never deleted)
+      parameters:
+        - { name: member, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Member archived }
+        '403': { description: Not your group / not committee }
+  /loans:
+    get:
+      summary: List loans, optional status filter
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [pending, approved, active, repaid, rejected] } }
+      responses:
+        '200':
+          description: Paginated loans
+    post:
+      summary: Request a loan (any member; committee or self only — server verifies)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [member_id, principal, repayment_days]
+              properties:
+                member_id: { type: integer }
+                principal: { type: integer, description: Whole TZS; eligibility recomputed server-side }
+                repayment_days: { type: integer, minimum: 1 }
+                idempotency_key: { type: string, description: Dedupe retries; replay returns 200 with duplicated=true }
+                note: { type: string }
+      responses:
+        '201': { description: Loan pending approval }
+        '200': { description: Duplicate of an already-created request }
+        '422': { description: Group rules rejected the amount (reason + max_allowed) }
+  /loans/{loan}:
+    get:
+      summary: Loan detail with member
+      parameters:
+        - { name: loan, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+  /loans/{loan}/approve:
+    post:
+      summary: Approve a pending loan (treasurer/chairperson/admin)
+      responses:
+        '200': { description: Approved }
+        '403': { description: Not financial authority }
+  /loans/{loan}/reject:
+    post:
+      summary: Reject a pending loan (treasurer/chairperson/admin)
+      responses:
+        '200': { description: Rejected }
+        '403': { description: Not financial authority }
+  /loans/{loan}/disburse:
+    post:
+      summary: Disburse an approved loan -> active
+      responses:
+        '200': { description: Active }
+        '422': { description: Loan is not approved yet }
+  /loans/{loan}/repayments:
+    post:
+      summary: Record a repayment; clamps at total_payable, auto-repays the loan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount: { type: integer, minimum: 1 }
+                recorded_at: { type: string, format: date-time }
+                idempotency_key: { type: string }
+      responses:
+        '201': { description: Repayment recorded with updated loan }
+  /contributions:
+    get:
+      summary: List contributions
+      responses:
+        '200': { description: Paginated contributions }
+    post:
+      summary: Record a contribution (committee roles only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [member_id, shares]
+              properties:
+                member_id: { type: integer }
+                shares: { type: integer, minimum: 1 }
+                recorded_at: { type: string, format: date-time }
+                idempotency_key: { type: string }
+      responses:
+        '201': { description: Contribution recorded, member shares bumped }
+  /groups/current:
+    get:
+      summary: Current user's group
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  group: { $ref: '#/components/schemas/Group' }
+    put:
+      summary: Update group settings (treasurer/admin only)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                share_value: { type: integer }
+                default_interest_rate: { type: number }
+                max_loan_multiple: { type: number }
+      responses:
+        '200': { description: Updated }
+        '403': { description: Not treasurer/admin }
+  /groups/current/summary:
+    get:
+      summary: Fund totals (savings pool, loan book, group balance)
+      responses:
+        '200': { description: OK }
+  /meetings:
+    get:
+      summary: List meetings
+      responses:
+        '200': { description: Paginated meetings }
+    post:
+      summary: Record a meeting with attendance (committee roles only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [held_at, agenda]
+              properties:
+                held_at: { type: string, format: date-time }
+                agenda: { type: string }
+                attendees:
+                  type: array
+                  items: { type: integer }
+                  description: Member ids present
+      responses:
+        '201': { description: Meeting recorded }
+  /reports/group-summary:
+    get:
+      summary: Aggregate report for the group
+      responses:
+        '200': { description: OK }
+  /reports/member-statement/{member}:
+    get:
+      summary: Per-member statement (contributions, loans, balances)
+      parameters:
+        - { name: member, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK }
+  /shareout:
+    get:
+      summary: Compute hypothetical share-out split
+      responses:
+        '200': { description: OK }
+  /sync:
+    post:
+      summary: Push queued offline mutations with idempotency keys; returns server state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                operations:
+                  type: array
+                  description: Mutations recorded offline (loans, contributions, repayments, members)
+      responses:
+        '200': { description: Applied; returns results + canonical state }
