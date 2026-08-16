@@ -1,6 +1,8 @@
 {
   "version": 2,
   "routes": [
+    { "src": "^/(favicon\.png|manifest\.json|version\.json|flutter_service_worker\.js|flutter_bootstrap\.js|flutter\.js|main\.dart\.js)", "dest": "/vikoba_app/build/web/$1" },
+    { "src": "^/canvaskit/(.*)", "dest": "/vikoba_app/build/web/canvaskit/$1" },
     { "src": "^/assets/(.*)", "dest": "/vikoba_app/build/web/assets/$1" },
     { "src": "^/icons/(.*)", "dest": "/vikoba_app/build/web/icons/$1" },
     { "handle": "filesystem" },
