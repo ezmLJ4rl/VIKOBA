@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "vikoba_app/build/web/**", "use": "@vercel/static" }
-  ],
   "routes": [
     { "src": "^/assets/(.*)", "dest": "/vikoba_app/build/web/assets/$1" },
     { "src": "^/icons/(.*)", "dest": "/vikoba_app/build/web/icons/$1" },
