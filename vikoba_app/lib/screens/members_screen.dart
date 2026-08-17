@@ -253,7 +253,7 @@ class _MembersScreenState extends State<MembersScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<MemberRole>(
-                        initialValue: selectedRole,
+                        value: selectedRole,
                         decoration: InputDecoration(labelText: l10n.role),
                         items: MemberRole.values
                             .map((r) => DropdownMenuItem(

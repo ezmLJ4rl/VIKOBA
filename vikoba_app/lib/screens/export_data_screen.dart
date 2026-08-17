@@ -209,7 +209,7 @@ class _ExportTile extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Text('$rows rows',
+                Text(l10n.reportRows(int.tryParse(rows) ?? 0),
                     style: AppFonts.body(12, FontWeight.w500,
                         color: AppColors.inkSoft)),
                 const Spacer(),

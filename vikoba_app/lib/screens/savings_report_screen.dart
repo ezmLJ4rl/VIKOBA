@@ -77,7 +77,7 @@ class _SavingsReportScreenState extends State<SavingsReportScreen> {
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<int>(
-                                initialValue: _month,
+                                value: _month,
                                 decoration: InputDecoration(
                                     labelText: l10n.reportMonth),
                                 items: _monthOptions
@@ -92,7 +92,7 @@ class _SavingsReportScreenState extends State<SavingsReportScreen> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: DropdownButtonFormField<int>(
-                                initialValue: _year,
+                                value: _year,
                                 decoration: InputDecoration(
                                     labelText: l10n.reportYear),
                                 items: _yearOptions

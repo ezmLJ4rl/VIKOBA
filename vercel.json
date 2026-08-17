@@ -1,10 +1,13 @@
 {
   "version": 2,
   "routes": [
-    { "src": "^/(favicon\.png|manifest\.json|version\.json|flutter_service_worker\.js|flutter_bootstrap\.js|flutter\.js|main\.dart\.js)", "dest": "/public/$1" },
+    { "src": "^/(favicon\\.png|manifest\\.json|version\\.json|flutter_service_worker\\.js|flutter_bootstrap\\.js|flutter\\.js|main\\.dart\\.js|NOTICES|AssetManifest\\.bin|FontManifest\\.bin\\.json)", "dest": "/public/$1" },
     { "src": "^/canvaskit/(.*)", "dest": "/public/canvaskit/$1" },
     { "src": "^/assets/(.*)", "dest": "/public/assets/$1" },
     { "src": "^/icons/(.*)", "dest": "/public/icons/$1" },
+    { "src": "^/fonts/(.*)", "dest": "/public/fonts/$1" },
+    { "src": "^/packages/(.*)", "dest": "/public/packages/$1" },
+    { "src": "^/shaders/(.*)", "dest": "/public/shaders/$1" },
     { "handle": "filesystem" },
     { "src": "^/(.*)$", "dest": "/public/index.html" }
   ]

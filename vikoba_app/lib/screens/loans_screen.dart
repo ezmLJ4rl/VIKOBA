@@ -444,7 +444,7 @@ class _LoanRequestSheetState extends State<_LoanRequestSheet> {
                       color: AppColors.inkSoft)),
               const SizedBox(height: 16),
               DropdownButtonFormField<Member>(
-                initialValue: _selectedMember,
+                value: _selectedMember,
                 decoration: InputDecoration(labelText: _l10n.member),
                 items: _members.members
                     .map((m) => DropdownMenuItem(
@@ -460,7 +460,7 @@ class _LoanRequestSheetState extends State<_LoanRequestSheet> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<LoanProduct>(
-                initialValue: _product,
+                value: _product,
                 decoration: InputDecoration(
                   labelText: _l10n.loanProduct,
                   helperText: _l10n.loanProductHelper,
@@ -510,7 +510,7 @@ class _LoanRequestSheetState extends State<_LoanRequestSheet> {
               ],
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
-                initialValue: _termMonths,
+                value: _termMonths,
                 decoration: InputDecoration(labelText: _l10n.loanTermMonths),
                 items: List.generate(maxTerm, (i) => i + 1)
                     .map((m) => DropdownMenuItem(
@@ -524,7 +524,7 @@ class _LoanRequestSheetState extends State<_LoanRequestSheet> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<Member?>(
-                initialValue: _guarantor1,
+                value: _guarantor1,
                 decoration: InputDecoration(
                   labelText: '${_l10n.guarantors} (1/2)',
                   helperText: _l10n.guarantorHint,
@@ -534,7 +534,7 @@ class _LoanRequestSheetState extends State<_LoanRequestSheet> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<Member?>(
-                initialValue: _guarantor2,
+                value: _guarantor2,
                 decoration: InputDecoration(labelText: '${_l10n.guarantors} (2/2)'),
                 items: _guarantorItems(exclude: _guarantor1),
                 onChanged: (v) => setState(() => _guarantor2 = v),

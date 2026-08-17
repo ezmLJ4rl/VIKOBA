@@ -156,7 +156,7 @@ class _ContributionsScreenState extends State<ContributionsScreen> {
                             color: AppColors.ink)),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<Member>(
-                      initialValue: selected,
+                      value: selected,
                       decoration: InputDecoration(labelText: l10n.member),
                       items: members
                           .map((m) => DropdownMenuItem(

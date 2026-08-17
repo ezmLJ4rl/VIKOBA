@@ -38,14 +38,16 @@ class PendingOperation {
   factory PendingOperation.create(
     String type,
     Map<String, dynamic> payload,
-  ) =>
-      PendingOperation(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        type: type,
-        payload: payload,
-        idempotencyKey: DateTime.now().microsecondsSinceEpoch.toString(),
-        createdAt: DateTime.now(),
-      );
+  ) {
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    return PendingOperation(
+      id: id,
+      type: type,
+      payload: payload,
+      idempotencyKey: id,
+      createdAt: DateTime.now(),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
